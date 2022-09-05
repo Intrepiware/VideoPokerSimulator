@@ -1,4 +1,5 @@
 ﻿using Cards.Models;
+using Cards.Services.Impl;
 using System;
 using System.Linq;
 
@@ -9,13 +10,32 @@ namespace Cards
         static void Main(string[] args)
         {
             var random = new Random();
-            var cards = Enumerable.Range(0, 51)
-                                    .Select(x => new { Card = Card.FromInt(x), Random = random.NextDouble() })
-                                    //.OrderBy(x => x.Random)
-                                    .Select(x => x.Card);
+            var handService = new CardHandService();
 
-            foreach (var card in cards)
-                Console.WriteLine($"{card.Rank} of {card.Suit}");
+
+            while (true)
+            {
+                for (long i = 0; ; i++)
+                {
+                    var cards = Enumerable.Range(0, 51).Select(x => Card.FromInt(x))
+                                                        .OrderBy(x => random.NextDouble())
+                                                        .Take(5)
+                                                        .ToList();
+
+                    var hand = handService.GetHand(cards);
+
+                    if (hand.HandType > HandType.Pair
+                        || (hand.HandType == HandType.Pair && hand.PrimaryRank >= Rank.Jack))
+                    {
+                        Console.WriteLine($"\n\n{cards[0]} {cards[1]} {cards[2]} {cards[3]} {cards[4]}\nFound {hand.HandType}\nIterations: {i + 1}\nPrimary Rank: {hand.PrimaryRank}\nSecondary Rank: {hand.SecondaryRank}");
+                        break;
+                    }
+                }
+
+                Console.Write("Go again? [Y/N]: ");
+                if (Console.ReadKey().KeyChar.ToString().ToUpper() != "Y")
+                    break;
+            }
         }
     }
 }

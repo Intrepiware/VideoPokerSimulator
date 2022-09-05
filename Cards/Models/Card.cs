@@ -10,7 +10,7 @@ namespace Cards.Models
         public Rank Rank { get; private set; }
         public Suit Suit { get; private set; }
 
-
+        #region Static Methods
         public static Card FromInt(int num)
         {
             if (num < 0 || num > 51)
@@ -63,17 +63,19 @@ namespace Cards.Models
             return new Card(rank, suit);
 
         }
-
-
-        public void test()
-        {
-            
-        }
+        #endregion
 
         public Card (Rank rank, Suit suit)
         {
             Rank = rank;
             Suit = suit;
+        }
+
+        public override string ToString()
+        {
+            var suits = new string[] { "\u2660", "\u2665", "\u2666", "\u2663" };
+            var ranks = new string[] { "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A" };
+            return $"{ranks[(int)this.Rank]}{suits[(int)this.Suit]}";
         }
     }
 

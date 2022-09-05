@@ -6,7 +6,7 @@ using System.Text;
 
 namespace Cards.Services.Impl
 {
-    public class ICardHandService : Services.ICardHandService
+    public class CardHandService : ICardHandService
     {
         public Hand GetHand(List<Card> cards)
         {
@@ -80,7 +80,7 @@ namespace Cards.Services.Impl
             var ranks = cards.OrderBy(x => x.Rank).Select(x => (int)x.Rank).ToList();
 
             // Check for ace-low straight
-            if(!ranks.Except(new[] { 0, 1, 2, 3, 12}).Any())
+            if(!(new[] { 0, 1, 2, 3, 12 }.Except(ranks).Any()))
             {
                 rank = Rank.Five;
                 return true;

@@ -10,12 +10,12 @@ namespace CardsFixture
         [TestFixture]
         public class When_Checking_Pairs
         {
-            ICardHandService handService;
+            CardHandService handService;
 
             [SetUp]
             public void Setup()
             {
-                handService = new ICardHandService();
+                handService = new CardHandService();
             }
 
             [Test]
@@ -54,12 +54,12 @@ namespace CardsFixture
         public class When_Checking_Two_Pairs
         {
 
-            ICardHandService handService;
+            CardHandService handService;
 
             [SetUp]
             public void Setup()
             {
-                handService = new ICardHandService();
+                handService = new CardHandService();
             }
 
             [Test]
@@ -101,12 +101,12 @@ namespace CardsFixture
         public class When_Checking_Three_Of_A_Kind
         {
 
-            ICardHandService handService;
+            CardHandService handService;
 
             [SetUp]
             public void Setup()
             {
-                handService = new ICardHandService();
+                handService = new CardHandService();
             }
 
             [Test]
@@ -144,12 +144,12 @@ namespace CardsFixture
         [TestFixture]
         public class When_Checking_Four_Of_A_Kind
         {
-            ICardHandService handService;
+            CardHandService handService;
 
             [SetUp]
             public void Setup()
             {
-                handService = new ICardHandService();
+                handService = new CardHandService();
             }
 
             [Test]
@@ -186,12 +186,12 @@ namespace CardsFixture
         [TestFixture]
         public class When_Checking_Flush
         {
-            ICardHandService handService;
+            CardHandService handService;
 
             [SetUp]
             public void Setup()
             {
-                handService = new ICardHandService();
+                handService = new CardHandService();
             }
 
             [Test]
@@ -223,12 +223,12 @@ namespace CardsFixture
         [TestFixture]
         public class When_Checking_Straight
         {
-            ICardHandService handService;
+            CardHandService handService;
 
             [SetUp]
             public void Setup()
             {
-                handService = new ICardHandService();
+                handService = new CardHandService();
             }
 
             [Test]
@@ -251,9 +251,12 @@ namespace CardsFixture
             }
 
             [Test]
-            public void Will_Confirm_Non_Straight()
+            // 5♦ 4♠ 2♣ 4♣ 3♣
+            [TestCase("4-C", "6-S", "3-H", "7-H", "10-D")]
+            [TestCase("5-D", "4-S", "2-C", "4-C", "3-C")]
+            public void Will_Reject_Non_Straight(string card1, string card2, string card3, string card4, string card5)
             {
-                var cards = Card.FromString("4-C", "6-S", "3-H", "7-H", "10-D");
+                var cards = Card.FromString(card1, card2, card3, card4, card5);
 
                 Assert.IsFalse(handService.IsStraight(cards, out var rank));
 
@@ -265,12 +268,12 @@ namespace CardsFixture
         public class When_Checking_Straight_Flush
         {
 
-            ICardHandService handService;
+            CardHandService handService;
 
             [SetUp]
             public void Setup()
             {
-                handService = new ICardHandService();
+                handService = new CardHandService();
             }
 
             [Test]
@@ -324,12 +327,12 @@ namespace CardsFixture
         public class When_Checking_FullHouse
         {
 
-            ICardHandService handService;
+            CardHandService handService;
 
             [SetUp]
             public void Setup()
             {
-                handService = new ICardHandService();
+                handService = new CardHandService();
             }
 
             [Test]
@@ -381,12 +384,12 @@ namespace CardsFixture
         public class When_Evaluating_Hand
         {
 
-            ICardHandService handService;
+            CardHandService handService;
 
             [SetUp]
             public void Setup()
             {
-                handService = new ICardHandService();
+                handService = new CardHandService();
             }
 
             [Test]
