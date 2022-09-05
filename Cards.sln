@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31919.166
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cards", "Cards\Cards.csproj", "{1A99206C-8D23-4FEE-B2E2-A43C2E3EF9F9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CardsFixture", "CardsFixture\CardsFixture.csproj", "{05D09DDD-B693-407B-A836-AD686C461011}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{1A99206C-8D23-4FEE-B2E2-A43C2E3EF9F9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1A99206C-8D23-4FEE-B2E2-A43C2E3EF9F9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1A99206C-8D23-4FEE-B2E2-A43C2E3EF9F9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1A99206C-8D23-4FEE-B2E2-A43C2E3EF9F9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{05D09DDD-B693-407B-A836-AD686C461011}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{05D09DDD-B693-407B-A836-AD686C461011}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{05D09DDD-B693-407B-A836-AD686C461011}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{05D09DDD-B693-407B-A836-AD686C461011}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {3A7048ED-D780-4DDC-99B6-04233007313F}
+	EndGlobalSection
+EndGlobal
