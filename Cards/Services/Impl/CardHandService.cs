@@ -13,35 +13,35 @@ namespace Cards.Services.Impl
             var rankedCards = cards.OrderByDescending(x => x.Rank).ToList();
 
             Rank? rank = default, rank2 = default;
-            if(IsStraightFlush(cards, out rank))
+            if(GetStraightFlush(cards, out rank))
                 return new Hand { HandType = HandType.StraightFlush, PrimaryRank = rank.Value };
 
-            if(IsFourOfAKind(cards, out rank))
+            if(GetFourOfAKind(cards, out rank))
                 return new Hand { HandType = HandType.FourOfAKind, PrimaryRank = rank.Value };
 
-            if(IsFullHouse(cards, out rank, out rank2))
+            if(GetFullHouse(cards, out rank, out rank2) != null)
                 return new Hand { HandType=HandType.FullHouse, PrimaryRank = rank.Value, SecondaryRank = rank2.Value };
 
-            if(IsFlush(cards))
+            if(GetFlush(cards))
                 return new Hand { HandType = HandType.Flush, PrimaryRank = cards.OrderByDescending(x => x.Rank).First().Rank };
 
-            if(IsStraight(cards, out rank))
+            if(GetStraight(cards, out rank))
                 return new Hand { HandType = HandType.Straight, PrimaryRank = rank.Value };
 
-            if(IsThreeOfAKind(cards, out rank))
+            if(GetThreeOfAKind(cards, out rank))
                 return new Hand { HandType = HandType.ThreeOfAKind, PrimaryRank = rank.Value };
 
-            if(IsTwoPair(cards, out rank, out rank2))
+            if(GetTwoPair(cards, out rank, out rank2))
                 return new Hand { HandType = HandType.TwoPair, PrimaryRank = rank.Value, SecondaryRank = rank2.Value };
 
-            if(IsPair(cards, out rank))
+            if(GetPair(cards, out rank))
                 return new Hand { HandType = HandType.Pair, PrimaryRank = rank.Value };
 
             return new Hand { HandType = HandType.HighCard, PrimaryRank = cards.OrderByDescending(x => x.Rank).First().Rank };
 
         }
-        public bool IsFlush(List<Card> cards) => cards.GroupBy(x => x.Suit).Count() == 1;
-        public bool IsFourOfAKind(List<Card> cards, out Rank? rank)
+        public bool GetFlush(List<Card> cards) => cards.GroupBy(x => x.Suit).Count() == 1;
+        public bool GetFourOfAKind(List<Card> cards, out Rank? rank)
         {
             SanityCheck(cards);
             rank = null;
@@ -57,7 +57,7 @@ namespace Cards.Services.Impl
             return false;
 
         }
-        public bool IsPair(List<Card> cards, out Rank? highestPair)
+        public bool GetPair(List<Card> cards, out Rank? highestPair)
         {
             SanityCheck(cards);
             highestPair = null;
@@ -73,7 +73,7 @@ namespace Cards.Services.Impl
             }
             return false;
         }
-        public bool IsStraight(List<Card> cards, out Rank? rank)
+        public bool GetStraight(List<Card> cards, out Rank? rank)
         {
             SanityCheck(cards);
             rank = null;
@@ -98,14 +98,14 @@ namespace Cards.Services.Impl
             return false;
 
         }
-        public bool IsStraightFlush(List<Card> cards, out Rank? rank)
+        public bool GetStraightFlush(List<Card> cards, out Rank? rank)
         {
             rank = null;
-            if (IsFlush(cards) && IsStraight(cards, out rank))
+            if (GetFlush(cards) && GetStraight(cards, out rank))
                 return true;
             return false;
         }
-        public bool IsThreeOfAKind(List<Card> cards, out Rank? rank)
+        public bool GetThreeOfAKind(List<Card> cards, out Rank? rank)
         {
             SanityCheck(cards);
             rank = null;
@@ -122,7 +122,7 @@ namespace Cards.Services.Impl
             return false;
 
         }
-        public bool IsTwoPair(List<Card> cards, out Rank? highestPair, out Rank? lowestPair)
+        public bool GetTwoPair(List<Card> cards, out Rank? highestPair, out Rank? lowestPair)
         {
             SanityCheck(cards);
             highestPair = null;
@@ -142,20 +142,38 @@ namespace Cards.Services.Impl
             return false;
         }
 
-        public bool IsFullHouse(List<Card> cards, out Rank? threeOfAKindRank, out Rank? pairRank)
+        public List<Card> GetFullHouse(List<Card> cards, out Rank? threeOfAKindRank, out Rank? pairRank)
         {
             threeOfAKindRank = null;
             pairRank = null;
 
-            var groups = cards.GroupBy(x => x.Rank).OrderByDescending(x => x.Count()).ToList();
-            if(groups.Count == 2)
+            var groups = cards.GroupBy(x => x.Rank).ToList();
+            if(groups.Count >= 2)
             {
-                threeOfAKindRank = groups[0].Key;
-                pairRank = groups[1].Key;
-                return true;
+                var threeOfAKind = groups.Where(x => x.Count() >= 3)
+                                        .OrderByDescending(x => x.Key)
+                                        .FirstOrDefault()?
+                                        .Take(3)
+                                        .ToList();
+
+                if(threeOfAKind != null)
+                {
+                    var pair = groups.Where(x => x.Count() >= 2 && x.Key != threeOfAKind.First().Rank)
+                                    .OrderByDescending(x => x.Key)
+                                    .FirstOrDefault()?
+                                    .Take(2)
+                                    .ToList();
+
+                    if(pair != null)
+                    {
+                        threeOfAKindRank = threeOfAKind.First().Rank;
+                        pairRank = pair.First().Rank;
+                        return threeOfAKind.Concat(pair).ToList();
+                    }
+                }
             }
 
-            return false;
+            return null;
         }
 
         public byte Compare(Hand hand1, Hand hand2) => throw new NotImplementedException();

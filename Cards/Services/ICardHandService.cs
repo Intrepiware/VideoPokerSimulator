@@ -7,14 +7,14 @@ namespace Cards.Services
     {
         Hand GetHand(List<Card> cards);
 
-        bool IsPair(List<Card> cards, out Rank? highestPair);
-        bool IsTwoPair(List<Card> cards, out Rank? highestPair, out Rank? lowestPair);
-        bool IsThreeOfAKind(List<Card> cards, out Rank? rank);
-        bool IsStraight(List<Card> cards, out Rank? rank);
-        bool IsFlush(List<Card> cards);
-        bool IsFourOfAKind(List<Card> cards, out Rank? rank);
-        bool IsStraightFlush(List<Card> cards, out Rank? rank);
-        bool IsFullHouse(List<Card> cards, out Rank? threeOfAKindRank, out Rank? pairRank);
+        bool GetPair(List<Card> cards, out Rank? highestPair);
+        bool GetTwoPair(List<Card> cards, out Rank? highestPair, out Rank? lowestPair);
+        bool GetThreeOfAKind(List<Card> cards, out Rank? rank);
+        bool GetStraight(List<Card> cards, out Rank? rank);
+        bool GetFlush(List<Card> cards);
+        bool GetFourOfAKind(List<Card> cards, out Rank? rank);
+        bool GetStraightFlush(List<Card> cards, out Rank? rank);
+        List<Card> GetFullHouse(List<Card> cards, out Rank? threeOfAKindRank, out Rank? pairRank);
 
         byte Compare(Hand hand1, Hand hand2);
     }
