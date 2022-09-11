@@ -1,6 +1,8 @@
 ﻿using Cards.Models;
 using Cards.Services.Impl;
 using NUnit.Framework;
+using System;
+using System.Linq;
 
 namespace CardsFixture
 {
@@ -19,23 +21,42 @@ namespace CardsFixture
             }
 
             [Test]
+            [TestCase("Too few cards", "4-C", "3-D", "2-H", "A-S")]
+            [TestCase("Too many cards", "4-C", "3-D", "2-H", "A-S", "K-C", "Q-D", "J-H", "10-S")]
+            [TestCase("Duplicate cards", "A-H", "A-H", "5-S", "7-D", "10-C")]
+            public void Will_Sanity_Check(string description, params string[] cards)
+            {
+                var hand = Card.FromString(cards);
+
+                Assert.Throws(typeof(ArgumentException), () => handService.GetPair(hand), $"Exception case \"{description}\" did not return an expected error");
+            }
+
+            [Test]
             public void Will_Confirm_Pair()
             {
                 var cards = Card.FromString("A-H", "A-D", "5-S", "7-D", "10-C");
 
-                Assert.IsTrue(handService.GetPair(cards, out var highestPair));
+                var hand = handService.GetPair(cards);
 
-                Assert.AreEqual(Rank.Ace, highestPair);
+                Assert.IsNotNull(hand);
+                CollectionAssert.AreEqual(Card.FromString("A-H", "A-D"), hand);
             }
 
             [Test]
-            public void Will_Confirm_Highest_Pair()
+            [TestCase("Regular Pair", "5-S", "5-D", "10-C", "A-H", "A-D")]
+            [TestCase("Three of a Kind", "5-S", "K-D", "A-C", "A-H", "A-D")]
+            [TestCase("Full House", "5-S", "5-D", "A-C", "A-H", "A-D")]
+            [TestCase("Full House 2", "5-S", "5-D", "5-C", "A-H", "A-D")]
+            [TestCase("Four of a Kind", "5-S", "A-S", "A-C", "A-H", "A-D")]
+            [TestCase("Seven Cards", "2-S", "3-D", "4-C", "5-H", "6-S", "A-H", "A-D")]
+            public void Will_Confirm_Highest_Pair(string description, params string[] cards)
             {
-                var cards = Card.FromString("5-S", "5-D", "10-C", "A-H", "A-D" );
+                var hand = Card.FromString(cards);
 
-                Assert.IsTrue(handService.GetPair(cards, out var highestPair));
+                var pair = handService.GetPair(hand);
 
-                Assert.AreEqual(Rank.Ace, highestPair);
+                Assert.AreEqual(2, pair.Count, $"Did not find pair in {description}");
+                Assert.IsTrue(pair.TrueForAll(x => x.Rank == Rank.Ace), $"Did not find highest rank in {description}");
 
             }
 
@@ -44,16 +65,13 @@ namespace CardsFixture
             {
                 var cards = Card.FromString("5-S", "8-D", "10-C", "A-H", "J-D");
 
-                Assert.IsFalse(handService.GetPair(cards, out var highestPair));
-
-                Assert.IsNull(highestPair);
+                Assert.IsNull(handService.GetPair(cards));
             }
         }
 
         [TestFixture]
         public class When_Checking_Two_Pairs
         {
-
             CardHandService handService;
 
             [SetUp]
@@ -63,37 +81,31 @@ namespace CardsFixture
             }
 
             [Test]
-            public void Will_Confirm_Two_Pair()
+            [TestCase("Regular Two Pair", "5-S", "5-D", "10-C", "A-H", "A-D")]
+            [TestCase("Full House", "5-D", "A-D", "A-C", "5-H", "5-H")]
+            [TestCase("Full House 2", "5-D", "A-D", "A-C", "A-H", "5-H")]
+            [TestCase("Seven Cards", "5-S", "5-D", "10-C", "A-H", "A-D", "2-C", "4-D")]
+            public void Will_Confirm_Two_Pair(string description, params string[] cards)
             {
-                var cards = Card.FromString("5-S", "5-D", "10-C", "A-H", "A-D");
+                var hand = Card.FromString(cards);
 
-                Assert.IsTrue(handService.GetTwoPair(cards, out var highPair, out var lowPair));
+                var twoPair = handService.GetTwoPair(hand);
+                Assert.IsNotNull(twoPair, $"Could not find two pair in {description}");
 
-                Assert.AreEqual(Rank.Ace, highPair);
-                Assert.AreEqual(Rank.Five, lowPair);
+                Assert.AreEqual(4, twoPair.Count);
+                Assert.AreEqual(2, twoPair.Where(x => x.Rank == Rank.Ace).Count());
+                Assert.AreEqual(2, twoPair.Where(x => x.Rank == Rank.Five).Count());
             }
 
             [Test]
-            public void Will_Confirm_Full_House()
+            [TestCase("Single Pair", "A-H", "A-D", "5-S", "7-D", "10-C")]
+            [TestCase("Straight", "2-C", "3-H", "4-D", "5-S", "6-C")]
+            [TestCase("Seven Card Straight", "2-C", "3-H", "4-D", "5-S", "6-C", "7-H", "8-D")]
+            public void Will_Reject_Non_Two_Pair(string description, params string[] cards)
             {
-                var cards = Card.FromString("9-D", "2-D", "2-C", "2-H", "9-H");
+                var hand = Card.FromString(cards);
 
-                Assert.IsTrue(handService.GetTwoPair(cards, out var highPair, out var lowPair));
-
-                Assert.AreEqual(Rank.Nine, highPair);
-                Assert.AreEqual(Rank.Two, lowPair);
-            }
-
-            [Test]
-            public void Will_Reject_Single_Pair()
-            {
-                var cards = Card.FromString("A-H", "A-D", "5-S", "7-D", "10-C");
-
-                Assert.False(handService.GetTwoPair(cards, out var rank1, out var rank2));
-
-                Assert.IsNull(rank1);
-                Assert.IsNull(rank2);
-
+                Assert.IsNull(handService.GetTwoPair(hand), $"Incorrectly got two pair from {description}");
             }
         }
 

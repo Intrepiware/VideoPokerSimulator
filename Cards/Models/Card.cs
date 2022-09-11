@@ -77,6 +77,13 @@ namespace Cards.Models
             var ranks = new string[] { "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A" };
             return $"{ranks[(int)this.Rank]}{suits[(int)this.Suit]}";
         }
+
+        public override bool Equals(object obj)
+        {
+            return obj is Card card
+                && card.Rank == this.Rank
+                && card.Suit == this.Suit;
+        }
     }
 
     public enum Rank

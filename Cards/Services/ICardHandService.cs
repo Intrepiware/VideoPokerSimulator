@@ -7,8 +7,8 @@ namespace Cards.Services
     {
         Hand GetHand(List<Card> cards);
 
-        bool GetPair(List<Card> cards, out Rank? highestPair);
-        bool GetTwoPair(List<Card> cards, out Rank? highestPair, out Rank? lowestPair);
+        List<Card> GetPair(List<Card> cards);
+        List<Card> GetTwoPair(List<Card> cards);
         bool GetThreeOfAKind(List<Card> cards, out Rank? rank);
         bool GetStraight(List<Card> cards, out Rank? rank);
         bool GetFlush(List<Card> cards);

@@ -31,16 +31,20 @@ namespace Cards.Services.Impl
             if(GetThreeOfAKind(cards, out rank))
                 return new Hand { HandType = HandType.ThreeOfAKind, PrimaryRank = rank.Value };
 
-            if(GetTwoPair(cards, out rank, out rank2))
+            if(GetTwoPair(cards) != null)
                 return new Hand { HandType = HandType.TwoPair, PrimaryRank = rank.Value, SecondaryRank = rank2.Value };
 
-            if(GetPair(cards, out rank))
+            if(GetPair(cards) != null)
                 return new Hand { HandType = HandType.Pair, PrimaryRank = rank.Value };
 
             return new Hand { HandType = HandType.HighCard, PrimaryRank = cards.OrderByDescending(x => x.Rank).First().Rank };
 
         }
-        public bool GetFlush(List<Card> cards) => cards.GroupBy(x => x.Suit).Count() == 1;
+        public bool GetFlush(List<Card> cards)
+        {
+            SanityCheck(cards);
+            return cards.GroupBy(x => x.Suit).Count() == 1;
+        }
         public bool GetFourOfAKind(List<Card> cards, out Rank? rank)
         {
             SanityCheck(cards);
@@ -57,10 +61,9 @@ namespace Cards.Services.Impl
             return false;
 
         }
-        public bool GetPair(List<Card> cards, out Rank? highestPair)
+        public List<Card> GetPair(List<Card> cards)
         {
             SanityCheck(cards);
-            highestPair = null;
             var groups = cards.GroupBy(x => x.Rank)
                               .Where(x => x.Count() >= 2)
                               .OrderByDescending(x => (int)x.First().Rank)
@@ -68,10 +71,9 @@ namespace Cards.Services.Impl
 
             if (groups.Any())
             {
-                highestPair = groups[0].Key;
-                return true;
+                return groups[0].Take(2).ToList();
             }
-            return false;
+            return null;
         }
         public bool GetStraight(List<Card> cards, out Rank? rank)
         {
@@ -122,28 +124,27 @@ namespace Cards.Services.Impl
             return false;
 
         }
-        public bool GetTwoPair(List<Card> cards, out Rank? highestPair, out Rank? lowestPair)
+        public List<Card> GetTwoPair(List<Card> cards)
         {
             SanityCheck(cards);
-            highestPair = null;
-            lowestPair = null;
 
             var groups = cards.GroupBy(x => x.Rank)
                               .Where(x => x.Count() >= 2)
-                              .OrderByDescending(x => (int)x.Key)
+                              .OrderByDescending(x => x.Key)
                               .ToList();
 
-            if (groups.Count == 2)
+            if (groups.Count >= 2)
             {
-                highestPair = groups[0].Key;
-                lowestPair = groups[1].Key;
-                return true;
+                var output = groups[0].Take(2).ToList();
+                output.AddRange(groups[1].Take(2));
+                return output;
             }
-            return false;
+            return null;
         }
 
         public List<Card> GetFullHouse(List<Card> cards, out Rank? threeOfAKindRank, out Rank? pairRank)
         {
+            SanityCheck(cards);
             threeOfAKindRank = null;
             pairRank = null;
 
@@ -180,10 +181,10 @@ namespace Cards.Services.Impl
 
         private void SanityCheck(List<Card> cards)
         {
-            if (cards?.Count != 5)
-                throw new ArgumentException("Card list must have exactly five cards");
+            if (cards?.Count < 5 || cards?.Count > 7)
+                throw new ArgumentException("Card list must have between five and seven cards");
 
-            var groups = cards.GroupBy(x => x).Where(x => x.Count() > 1).FirstOrDefault();
+            var groups = cards.GroupBy(x => new { x.Rank, x.Suit }).Where(x => x.Count() > 1).FirstOrDefault();
             if (groups != null)
                 throw new ArgumentException($"Cards must be unique ({groups.Key.Rank} of {groups.Key.Suit} listed multiple times)");
         }
