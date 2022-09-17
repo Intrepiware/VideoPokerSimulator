@@ -31,11 +31,23 @@ namespace Cards.Services.Impl
             if(GetThreeOfAKind(cards, out rank))
                 return new Hand { HandType = HandType.ThreeOfAKind, PrimaryRank = rank.Value };
 
-            if(GetTwoPair(cards) != null)
-                return new Hand { HandType = HandType.TwoPair, PrimaryRank = rank.Value, SecondaryRank = rank2.Value };
+            if(GetTwoPair(cards) is {} twoPair)
+            {
+                var pairs = twoPair.GroupBy(x => x.Rank)
+                                .Where(x => x.Count() == 2)
+                                .OrderByDescending(x => x.Key)
+                                .ToList();
+                return new Hand { HandType = HandType.TwoPair, PrimaryRank = pairs[0].Key, SecondaryRank = pairs[1].Key };
+            }
 
-            if(GetPair(cards) != null)
+            if(GetPair(cards) is {} pair)
+            {
+                rank = pair.GroupBy(x => x.Rank)
+                            .Where(x => x.Count() >= 2)
+                            .OrderByDescending(x => x.Key)
+                            .First().Key;
                 return new Hand { HandType = HandType.Pair, PrimaryRank = rank.Value };
+            }
 
             return new Hand { HandType = HandType.HighCard, PrimaryRank = cards.OrderByDescending(x => x.Rank).First().Rank };
 

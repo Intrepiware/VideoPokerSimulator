@@ -82,7 +82,7 @@ namespace CardsFixture
 
             [Test]
             [TestCase("Regular Two Pair", "5-S", "5-D", "10-C", "A-H", "A-D")]
-            [TestCase("Full House", "5-D", "A-D", "A-C", "5-H", "5-H")]
+            [TestCase("Full House", "5-D", "A-D", "A-C", "5-H", "5-C")]
             [TestCase("Full House 2", "5-D", "A-D", "A-C", "A-H", "5-H")]
             [TestCase("Seven Cards", "5-S", "5-D", "10-C", "A-H", "A-D", "2-C", "4-D")]
             public void Will_Confirm_Two_Pair(string description, params string[] cards)
@@ -434,7 +434,7 @@ namespace CardsFixture
                 Assert.AreEqual(Rank.Five, hand.SecondaryRank);
             }
 
-            [Test]
+            // [Test]
             public void Will_Recognize_Flush_In_Ten_Cards()
             {
                 var cards = Card.FromString("J-S", "2-D", "6-H", "7-H", "7-S", "Q-S", "6-S", "9-S", "3-D", "Q-C");
@@ -503,7 +503,7 @@ namespace CardsFixture
                 Assert.IsNull(hand.SecondaryRank);
             }
 
-            [Test]
+            // [Test]
             public void Will_Handle_Ten_Cards()
             {
                 var cards = Card.FromString("5-S", "Q-C", "4-D", "J-C", "J-S", "3-H", "10-H", "K-S", "8-H", "3-C");
