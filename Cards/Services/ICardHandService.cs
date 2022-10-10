@@ -9,12 +9,12 @@ namespace Cards.Services
 
         List<Card> GetPair(List<Card> cards);
         List<Card> GetTwoPair(List<Card> cards);
-        bool GetThreeOfAKind(List<Card> cards, out Rank? rank);
-        bool GetStraight(List<Card> cards, out Rank? rank);
-        bool GetFlush(List<Card> cards);
-        bool GetFourOfAKind(List<Card> cards, out Rank? rank);
-        bool GetStraightFlush(List<Card> cards, out Rank? rank);
-        List<Card> GetFullHouse(List<Card> cards, out Rank? threeOfAKindRank, out Rank? pairRank);
+        List<Card> GetThreeOfAKind(List<Card> cards);
+        List<Card> GetStraight(List<Card> cards);
+        List<Card> GetFlush(List<Card> cards);
+        List<Card> GetFourOfAKind(List<Card> cards);
+        List<Card> GetStraightFlush(List<Card> cards);
+        List<Card> GetFullHouse(List<Card> cards);
 
         byte Compare(Hand hand1, Hand hand2);
     }

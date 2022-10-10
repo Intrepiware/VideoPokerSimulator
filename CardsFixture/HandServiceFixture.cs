@@ -126,9 +126,9 @@ namespace CardsFixture
             {
                 var cards = Card.FromString("7-S", "7-C", "2-C", "A-D", "7-H");
 
-                Assert.IsTrue(handService.GetThreeOfAKind(cards, out var rank));
+                var hand = handService.GetThreeOfAKind(cards);
 
-                Assert.AreEqual(Rank.Seven, rank);
+                Assert.AreEqual(Rank.Seven, hand[0].Rank);
             }
 
             [Test]
@@ -136,9 +136,9 @@ namespace CardsFixture
             {
                 var cards = Card.FromString("A-H", "2-C", "A-C", "A-S", "A-D");
 
-                Assert.IsTrue(handService.GetThreeOfAKind(cards, out var rank));
+                var hand = handService.GetThreeOfAKind(cards);
 
-                Assert.AreEqual(Rank.Ace, rank);
+                Assert.AreEqual(Rank.Ace, hand[0].Rank);
             }
 
             [Test]
@@ -146,9 +146,7 @@ namespace CardsFixture
             {
                 var cards = Card.FromString("7-S", "7-C", "2-C", "A-D", "9-H");
 
-                Assert.IsFalse(handService.GetThreeOfAKind(cards, out var rank));
-
-                Assert.IsNull(rank);
+                Assert.IsNull(handService.GetThreeOfAKind(cards));
             }
 
         }
@@ -169,9 +167,9 @@ namespace CardsFixture
             {
                 var cards = Card.FromString("5-C", "3-H", "3-D", "3-S", "3-C");
 
-                Assert.IsTrue(handService.GetFourOfAKind(cards, out var rank));
+                var result = handService.GetFourOfAKind(cards);
 
-                Assert.AreEqual(Rank.Three, rank);
+                Assert.IsTrue(result.All(x => x.Rank == Rank.Three));
             }
 
             [Test]
@@ -179,9 +177,7 @@ namespace CardsFixture
             {
                 var cards = Card.FromString("7-S", "7-C", "2-C", "A-D", "9-H");
 
-                Assert.IsFalse(handService.GetFourOfAKind(cards, out var rank));
-
-                Assert.IsNull(rank);
+                Assert.IsNull(handService.GetFourOfAKind(cards));
             }
 
             [Test]
@@ -189,9 +185,7 @@ namespace CardsFixture
             {
                 var cards = Card.FromString("7-S", "7-C", "2-C", "A-D", "7-H");
 
-                Assert.IsFalse(handService.GetFourOfAKind(cards, out var rank));
-
-                Assert.IsNull(rank);
+                Assert.IsNull(handService.GetFourOfAKind(cards));
             }
         }
 
@@ -207,11 +201,13 @@ namespace CardsFixture
             }
 
             [Test]
-            public void Will_Confirm_Flush()
+            [TestCase("Five card hand", "3-C", "6-C", "Q-C", "K-C", "7-C")]
+            [TestCase("Seven card hand", "3-C", "6-C", "Q-C", "K-C", "7-C", "2-D", "9-H")]
+            public void Will_Confirm_Flush(string scenarioName, params string[] args)
             {
-                var cards = Card.FromString("3-C", "6-C", "Q-C", "K-C", "7-C");
+                var cards = Card.FromString(args);
 
-                Assert.IsTrue(handService.GetFlush(cards));
+                Assert.IsNotNull(handService.GetFlush(cards), $"Did not recognize flush in {scenarioName}");
             }
 
             [Test]
@@ -219,7 +215,7 @@ namespace CardsFixture
             {
                 var cards = Card.FromString("3-C", "4-C", "5-C", "6-C", "7-C");
 
-                Assert.IsTrue(handService.GetFlush(cards));
+                Assert.IsNotNull(handService.GetFlush(cards));
             }
 
             [Test]
@@ -227,7 +223,7 @@ namespace CardsFixture
             {
                 var cards = Card.FromString("3-C", "6-C", "Q-C", "K-H", "7-C");
 
-                Assert.IsFalse(handService.GetFlush(cards));
+                Assert.IsNull(handService.GetFlush(cards));
             }
 
         }
@@ -248,9 +244,7 @@ namespace CardsFixture
             {
                 var cards = Card.FromString("4-C", "6-S", "3-H", "7-H", "5-D");
 
-                Assert.IsTrue(handService.GetStraight(cards, out var rank));
-
-                Assert.AreEqual(Rank.Seven, rank);
+                Assert.IsNotNull(handService.GetStraight(cards));
             }
 
             [Test]
@@ -258,8 +252,7 @@ namespace CardsFixture
             {
                 var cards = Card.FromString("A-C", "2-D", "3-S", "4-H", "5-C");
 
-                Assert.IsTrue(handService.GetStraight(cards, out var rank));
-                Assert.AreEqual(Rank.Five, rank);
+                Assert.IsNotNull(handService.GetStraight(cards));
             }
 
             [Test]
@@ -270,10 +263,27 @@ namespace CardsFixture
             {
                 var cards = Card.FromString(card1, card2, card3, card4, card5);
 
-                Assert.IsFalse(handService.GetStraight(cards, out var rank));
-
-                Assert.IsNull(rank);
+                Assert.IsNull(handService.GetStraight(cards));
             }
+
+            [Test]
+            [TestCase("Ace Low", Rank.Ace, "A-C", "2-D", "3-H", "4-S", "5-C", "10-D", "J-H")]
+            [TestCase("Bottom of Hand", Rank.Six, "2-D", "3-H", "4-S", "5-C", "6-D", "J-H", "Q-S")]
+            [TestCase("Middle of Hand", Rank.Eight, "2-D", "4-S", "5-C", "6-D", "7-D", "8-H", "Q-S")]
+            [TestCase("Top of Hand", Rank.Queen, "2-D", "4-S", "8-C", "9-D", "10-D", "J-H", "Q-S")]
+            [TestCase("Embedded Pair", Rank.Six, "2-D", "3-H", "3-D", "4-S", "5-C", "6-D", "J-H")]
+            [TestCase("Two Embedded Pair", Rank.Six, "2-D", "3-H", "3-D", "4-S", "4-C", "5-C", "6-D")]
+            public void Will_Confirm_In_Seven_Card_Hand(string scenarioName, Rank expectedRank, params string[] args)
+            {
+                var cards = Card.FromString(args);
+
+                var result = handService.GetStraight(cards);
+                
+                Assert.IsNotNull(result, $"Did not recognize \"{scenarioName}\" scenario");
+
+                Assert.AreEqual(expectedRank, result.Max(x => x.Rank), $"Did not return expected hand with top rank {expectedRank}");
+            }
+
         }
 
         [TestFixture]
@@ -293,8 +303,7 @@ namespace CardsFixture
             {
                 var cards = Card.FromString("3-C", "6-C", "Q-C", "K-C", "7-C");
 
-                Assert.IsFalse(handService.GetStraightFlush(cards, out var rank));
-                Assert.IsNull(rank);
+                Assert.IsNull(handService.GetStraightFlush(cards));
             }
 
             [Test]
@@ -302,9 +311,7 @@ namespace CardsFixture
             {
                 var cards = Card.FromString("4-C", "6-S", "3-H", "7-H", "5-D");
 
-                Assert.IsFalse(handService.GetStraightFlush(cards, out var rank));
-
-                Assert.IsNull(rank);
+                Assert.IsNull(handService.GetStraightFlush(cards));
             }
 
             [Test]
@@ -312,8 +319,7 @@ namespace CardsFixture
             {
                 var cards = Card.FromString("3-C", "4-C", "5-C", "6-C", "7-C");
 
-                Assert.IsTrue(handService.GetStraightFlush(cards, out var rank));
-                Assert.AreEqual(Rank.Seven, rank);
+                Assert.IsNotNull(handService.GetStraightFlush(cards));
             }
 
             [Test]
@@ -321,8 +327,7 @@ namespace CardsFixture
             {
                 var cards = Card.FromString("A-C", "2-C", "3-C", "4-C", "5-C");
 
-                Assert.IsTrue(handService.GetStraightFlush(cards, out var rank));
-                Assert.AreEqual(Rank.Five, rank);
+                Assert.IsNotNull(handService.GetStraightFlush(cards));                
             }
 
             [Test]
@@ -330,8 +335,7 @@ namespace CardsFixture
             {
                 var cards = Card.FromString("6-S", "5-C", "A-H", "5-H", "4-H");
 
-                Assert.IsFalse(handService.GetStraightFlush(cards, out var rank));
-                Assert.IsNull(rank);
+                Assert.IsNull(handService.GetStraightFlush(cards));
             }
         }
 
@@ -355,7 +359,7 @@ namespace CardsFixture
             {
                 var hand = Card.FromString(cards);
 
-                Assert.IsNotNull(handService.GetFullHouse(hand, out var _, out var _), $"Did not confirm {description}");
+                Assert.IsNotNull(handService.GetFullHouse(hand), $"Did not confirm {description}");
             }
 
             [Test]
@@ -367,7 +371,7 @@ namespace CardsFixture
             public void Will_Reject_NonFullHouse(string description, params string[] cards)
             {
                 var hand = Card.FromString(cards);
-                Assert.IsNull(handService.GetFullHouse(hand, out _, out _), $"Failed to reject {description}");
+                Assert.IsNull(handService.GetFullHouse(hand), $"Failed to reject {description}");
 
             }
 
@@ -376,11 +380,9 @@ namespace CardsFixture
             {
                 var cards = Card.FromString("2-S", "2-H", "5-S", "2-D", "5-H");
 
-                var hand = handService.GetFullHouse(cards, out var threeOfAKindRank, out var pairRank);
+                var hand = handService.GetFullHouse(cards);
 
                 Assert.IsNotNull(hand);
-                Assert.AreEqual(Rank.Two, threeOfAKindRank);
-                Assert.AreEqual(Rank.Five, pairRank);
                 CollectionAssert.AreEquivalent(cards, hand);
             }
         }
@@ -466,6 +468,17 @@ namespace CardsFixture
                 Assert.AreEqual(HandType.Straight, hand.HandType);
                 Assert.AreEqual(Rank.Seven, hand.PrimaryRank);
                 Assert.IsNull(hand.SecondaryRank);
+            }
+
+            [Test]
+            public void Will_Recognize_Ace_Low_Straight()
+            {
+                var cards = Card.FromString("A-C", "2-S", "3-H", "4-H", "5-D");
+
+                var hand = handService.GetHand(cards);
+
+                Assert.AreEqual(HandType.Straight, hand.HandType);
+                Assert.AreEqual(Rank.Five, hand.PrimaryRank);
             }
 
             [Test]
