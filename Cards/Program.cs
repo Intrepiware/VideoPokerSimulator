@@ -1,8 +1,10 @@
 ﻿using Cards.Models;
 using Cards.Services.Impl;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using static Cards.Services.Impl.UtilService;
 
 namespace Cards
@@ -20,17 +22,26 @@ namespace Cards
 
                 Console.WriteLine("Press a key to continue...");
                 Console.ReadKey();
+                Console.WriteLine("Processing...");
 
                 var heldPositions = Enumerable.Range(0, 32)
                                     .ToList();
-                var results = new List<HandSimulatorResult>();
 
-                foreach (var heldPosition in heldPositions)
-                {
-                    var simulator = new HandSimulator();
-                    Console.WriteLine($"[{heldPosition}]: {Stringify(simulator.GetHeldCards(hand, (byte)heldPosition))}...");
-                    results.Add(simulator.Process(hand, (byte)heldPosition, iterations));
-                }
+                var threadResults = new ConcurrentBag<HandSimulatorResult>();
+
+                Parallel.ForEach(heldPositions,
+                    new ParallelOptions { MaxDegreeOfParallelism = 4 },
+                    heldPosition =>
+                    {
+                        var simulator = new HandSimulator();
+                        threadResults.Add(simulator.Process(hand, (byte)heldPosition, iterations));
+                    });
+
+                var results = threadResults.OrderBy(x => x.HeldPositions).ToList();
+
+                foreach (var result in results)
+                    Console.WriteLine($"[{result.HeldPositions}]: {Stringify(result.HeldCards)}");
+
 
                 var mostPoints = results.OrderByDescending(x => x.Score).First();
                 Console.WriteLine($"Most Points: {Stringify(mostPoints.HeldCards)} ({mostPoints.Score} pts, {mostPoints.Wins} wins, {mostPoints.Wins * 1.0 / iterations:P2})");
@@ -63,7 +74,6 @@ namespace Cards
                 Console.Clear();
             }
         }
-
 
     }
 
