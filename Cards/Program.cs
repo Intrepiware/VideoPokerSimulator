@@ -21,21 +21,21 @@ namespace Cards
                 Console.WriteLine("Press a key to continue...");
                 Console.ReadKey();
 
-
-                var simulators = Enumerable.Range(0, 32)
-                                    .Select(x => new HandSimulator(hand, (byte)x, iterations))
+                var heldPositions = Enumerable.Range(0, 32)
                                     .ToList();
+                var results = new List<HandSimulatorResult>();
 
-                foreach (var simulator in simulators)
+                foreach (var heldPosition in heldPositions)
                 {
-                    Console.WriteLine($"[{simulator.HeldPositions}]: {Stringify(simulator.HeldCards)}...");
-                    simulator.Process();
+                    var simulator = new HandSimulator();
+                    Console.WriteLine($"[{heldPosition}]: {Stringify(simulator.GetHeldCards(hand, (byte)heldPosition))}...");
+                    results.Add(simulator.Process(hand, (byte)heldPosition, iterations));
                 }
 
-                var mostPoints = simulators.OrderByDescending(x => x.Score).First();
+                var mostPoints = results.OrderByDescending(x => x.Score).First();
                 Console.WriteLine($"Most Points: {Stringify(mostPoints.HeldCards)} ({mostPoints.Score} pts, {mostPoints.Wins} wins, {mostPoints.Wins * 1.0 / iterations:P2})");
 
-                var mostWins = simulators.OrderByDescending(x => x.Wins).First();
+                var mostWins = results.OrderByDescending(x => x.Wins).ThenByDescending(x => x.Score).First();
                 Console.WriteLine($"Most Wins: {Stringify(mostWins.HeldCards)} ({mostWins.Score} pts, {mostWins.Wins} wins, {mostWins.Wins * 1.0 / iterations:P2})");
 
                 while (true)
@@ -45,7 +45,7 @@ namespace Cards
 
                     if (int.TryParse(response, out var value) && value >= 0 && value < 32)
                     {
-                        var chosen = simulators.Single(x => x.HeldPositions == value);
+                        var chosen = results.Single(x => x.HeldPositions == value);
                         Console.WriteLine($"{Stringify(chosen.HeldCards)}:");
                         Console.WriteLine($"{chosen.Score} points, {chosen.Wins} wins, {chosen.Wins * 1.0 / iterations:P2}");
                         var handTypes = chosen.HandTypeCount.OrderByDescending(x => x.Key);
@@ -67,60 +67,77 @@ namespace Cards
 
     }
 
+    public class HandSimulatorResult
+    {
+        public List<Card> HeldCards { get; set; }
+        public byte HeldPositions { get; set; }
+        public int Score { get; set; }
+        public int Wins { get; set; }
+        public Dictionary<HandType, int> HandTypeCount { get; set; }
+        public int Iterations { get; set; }
+    }
+
     public class HandSimulator
     {
-        public List<Card> Hand { get; private set; }
-        public List<Card> HeldCards { get; private set; } = new List<Card>();
-        public byte HeldPositions { get; private set; }
-        public int Score { get; private set; }
-        public int Wins { get; private set; }
-        public Dictionary<HandType, int> HandTypeCount { get; private set; } = new Dictionary<HandType, int>();
-        public int Iterations { get; private set; }
 
-        public HandSimulator(List<Card> hand, byte heldPositions, int iterations)
+        public List<Card> GetHeldCards(List<Card> hand, byte heldPositions)
         {
-            Hand = hand;
-            HeldPositions = heldPositions;
-            Iterations = iterations;
+            var heldCards = new List<Card>();
 
-            if ((HeldPositions & 1) == 1)
-                HeldCards.Add(Hand[0]);
+            if ((heldPositions & 1) == 1)
+                heldCards.Add(hand[0]);
 
-            if ((HeldPositions & 2) == 2)
-                HeldCards.Add(Hand[1]);
+            if ((heldPositions & 2) == 2)
+                heldCards.Add(hand[1]);
 
-            if ((HeldPositions & 4) == 4)
-                HeldCards.Add(Hand[2]);
+            if ((heldPositions & 4) == 4)
+                heldCards.Add(hand[2]);
 
-            if ((HeldPositions & 8) == 8)
-                HeldCards.Add(Hand[3]);
+            if ((heldPositions & 8) == 8)
+                heldCards.Add(hand[3]);
 
-            if ((HeldPositions & 16) == 16)
-                HeldCards.Add(Hand[4]);
+            if ((heldPositions & 16) == 16)
+                heldCards.Add(hand[4]);
+
+            return heldCards;
         }
 
-        public void Process()
-        { 
+        public HandSimulatorResult Process(List<Card> hand, byte heldPositions, int iterations)
+        {
+            int wins = 0, score = 0;
+            var handTypeCount = new Dictionary<HandType, int>();
+
+            var heldCards = GetHeldCards(hand, heldPositions);
 
             var handService = new CardHandService();
 
-            for(var i = 0; i < Iterations; i++)
+            for (var i = 0; i < iterations; i++)
             {
-                var redeal = Shuffle(Hand).Take(5 - HeldCards.Count).ToList();
-                redeal.AddRange(HeldCards);
+                var redeal = Shuffle(hand).Take(5 - heldCards.Count).ToList();
+                redeal.AddRange(heldCards);
 
                 var result = handService.GetHand(redeal);
 
-                var score = Score(result, 1);
-                if(score > 0)
+                var handScore = Score(result, 1);
+                if(handScore > 0)
                 {
-                    Wins++;
-                    Score += score;
+                    wins++;
+                    score += handScore;
                 }
 
-                HandTypeCount[result.HandType] = HandTypeCount.ContainsKey(result.HandType) ? HandTypeCount[result.HandType] + 1 : 1;
+                handTypeCount[result.HandType] = handTypeCount.ContainsKey(result.HandType) ? handTypeCount[result.HandType] + 1 : 1;
 
             }
+
+            return new HandSimulatorResult
+            {
+                HeldCards = heldCards,
+                HandTypeCount = handTypeCount,
+                HeldPositions = heldPositions,
+                Iterations = iterations,
+                Score = score,
+                Wins = wins
+            };
 
         }
     }

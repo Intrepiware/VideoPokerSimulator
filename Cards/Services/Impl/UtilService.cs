@@ -41,7 +41,6 @@ namespace Cards.Services.Impl
         public static List<Card> Shuffle(List<Card> excludedCards)
         {
             var cards = Enumerable.Range(0, 52).Select(x => Card.FromInt(x))
-                                                .OrderBy(x => random.NextDouble())
                                                 .ToList();
 
             if (excludedCards?.Count > 0)
@@ -49,7 +48,7 @@ namespace Cards.Services.Impl
                 cards = cards.Where(x => !excludedCards.Any(y => x.Rank == y.Rank && x.Suit == y.Suit)).ToList();
             }
 
-            return cards;
+            return cards.OrderBy(x => random.NextDouble()).ToList();
 
         }
     }
