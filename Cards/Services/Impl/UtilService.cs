@@ -3,12 +3,20 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 
 namespace Cards.Services.Impl
 {
     public static class UtilService
     {
-        static Random random = new Random();
+        // https://stackoverflow.com/a/38530913
+        private static int _tracker = 0;
+
+        private static ThreadLocal<Random> _random = new ThreadLocal<Random>(() => {
+            var seed = (int)(Environment.TickCount & 0xFFFFFF00 | (byte)(Interlocked.Increment(ref _tracker) % 255));
+            var random = new Random(seed);
+            return random;
+        });
 
         public static int Score(Hand hand, int wager)
         {
@@ -48,7 +56,7 @@ namespace Cards.Services.Impl
                 cards = cards.Where(x => !excludedCards.Any(y => x.Rank == y.Rank && x.Suit == y.Suit)).ToList();
             }
 
-            return cards.OrderBy(x => random.NextDouble()).ToList();
+            return cards.OrderBy(x => _random.Value.NextDouble()).ToList();
 
         }
     }
