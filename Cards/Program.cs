@@ -12,10 +12,26 @@ namespace Cards
         static void Main(string[] args)
         {
             const int iterations = 50000;
+
+            List<Card> hand = new List<Card>();
+            var response = string.Empty;
+
+            Console.Write("[I]nput hand, or [R]andom?");
+            response = Console.ReadKey().KeyChar.ToString();
+
             while (true)
             {
 
-                var hand = Shuffle(null).Take(5).ToList();
+                if (response == "i")
+                {
+                    Console.Write("\nInput hand:");
+                    var input = Console.ReadLine();
+                    hand = Card.FromString(input.Split(' ')).Take(5).ToList();
+                }
+                else
+                    hand = Shuffle(null).Take(5).ToList();
+
+
                 Console.WriteLine($"Running simulations on {Stringify(hand)}");
 
                 Console.WriteLine("Press a key to continue...");
@@ -40,8 +56,8 @@ namespace Cards
 
                 while (true)
                 {
-                    Console.Write("Run another? [Y, N (0-32)]: ");
-                    var response = Console.ReadLine();
+                    Console.Write("[I]nput, [R]andom, [Q]uit or (0-32): ");
+                    response = Console.ReadLine();
 
                     if (int.TryParse(response, out var value) && value >= 0 && value < 32)
                     {
@@ -54,10 +70,10 @@ namespace Cards
 
                         Console.WriteLine();
                     }
-                    else if (response.ToLower() == "y")
-                        break;
-                    else
+                    else if (response.ToLower() == "q")
                         return;
+                    else
+                        break;
                 }
 
                 Console.Clear();
