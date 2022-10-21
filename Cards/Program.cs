@@ -4,6 +4,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using static Cards.Services.Impl.UtilService;
 
@@ -24,6 +25,8 @@ namespace Cards
             while (true)
             {
 
+                Console.Clear();
+
                 if (response == "i")
                 {
                     Console.Write("\nInput hand:");
@@ -31,39 +34,52 @@ namespace Cards
                     hand = Card.FromString(input.Split(' ')).Take(5).ToList();
                 }
                 else
+                {
                     hand = Shuffle(null).Take(5).ToList();
+                    Console.WriteLine($"Running simulations on {Stringify(hand)}");
+                    Console.WriteLine("Press [R] to Redeal, or any other key to confirm...");
+                    if (Console.ReadKey().KeyChar.ToString().ToLower() == "r")
+                        continue;
+                }
 
-
-                Console.WriteLine($"Running simulations on {Stringify(hand)}");
-
-                Console.WriteLine("Press a key to continue...");
-                Console.ReadKey();
-                Console.WriteLine("Processing...");
 
                 var heldPositions = Enumerable.Range(0, 32)
                                     .ToList();
 
                 var threadResults = new ConcurrentBag<HandSimulatorResult>();
+                int resultCount = 0;
 
+                void printProgress()
+                {
+                    var results = Interlocked.Increment(ref resultCount);
+                    var spaceCount = Math.Max(32 - results - 1, 0);
+                    var percent = Math.Min(results * 1.0 / 32, 1);
+                    Console.CursorLeft = 0;                    
+                    Console.Write($"Processing [{new string('.', results)}{new string(' ', spaceCount)}] ({percent:P0})");
+                }
+
+                printProgress();
                 Parallel.ForEach(heldPositions,
                     new ParallelOptions { MaxDegreeOfParallelism = 4 },
                     heldPosition =>
                     {
                         var simulator = new HandSimulator();
                         threadResults.Add(simulator.Process(hand, (byte)heldPosition, iterations));
+                        printProgress();
                     });
 
+                printProgress();
+                Console.WriteLine();
                 var results = threadResults.OrderBy(x => x.HeldPositions).ToList();
-
                 foreach (var result in results)
                     Console.WriteLine($"[{result.HeldPositions}]: {Stringify(result.HeldCards)}");
 
 
                 var mostPoints = results.OrderByDescending(x => x.Score).First();
-                Console.WriteLine($"Most Points: {Stringify(mostPoints.HeldCards)} ({mostPoints.Score} pts, {mostPoints.Wins} wins, {mostPoints.Wins * 1.0 / iterations:P2})");
+                Console.WriteLine($"Most Points: {Stringify(mostPoints.HeldCards)} ({mostPoints.Score:N0} pts, {mostPoints.Wins:N0} wins, {mostPoints.Wins * 1.0 / iterations:P2})");
 
                 var mostWins = results.OrderByDescending(x => x.Wins).ThenByDescending(x => x.Score).First();
-                Console.WriteLine($"Most Wins: {Stringify(mostWins.HeldCards)} ({mostWins.Score} pts, {mostWins.Wins} wins, {mostWins.Wins * 1.0 / iterations:P2})");
+                Console.WriteLine($"Most Wins: {Stringify(mostWins.HeldCards)} ({mostWins.Score:N0} pts, {mostWins.Wins:N0} wins, {mostWins.Wins * 1.0 / iterations:P2})");
 
                 while (true)
                 {
@@ -74,10 +90,10 @@ namespace Cards
                     {
                         var chosen = results.Single(x => x.HeldPositions == value);
                         Console.WriteLine($"{Stringify(chosen.HeldCards)}:");
-                        Console.WriteLine($"{chosen.Score} points, {chosen.Wins} wins, {chosen.Wins * 1.0 / iterations:P2}");
+                        Console.WriteLine($"{chosen.Score:N0} points, {chosen.Wins:N0} wins, {chosen.Wins * 1.0 / iterations:P2}");
                         var handTypes = chosen.HandTypeCount.OrderByDescending(x => x.Key);
                         foreach (var handType in handTypes)
-                            Console.WriteLine($"{handType.Key}: {handType.Value} wins");
+                            Console.WriteLine($"{handType.Key}: {handType.Value:N0} wins ({handType.Value * 1.0 / iterations:P2})");
 
                         Console.WriteLine();
                     }
@@ -86,8 +102,6 @@ namespace Cards
                     else
                         break;
                 }
-
-                Console.Clear();
             }
         }
 
