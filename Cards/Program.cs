@@ -145,7 +145,7 @@ namespace Cards
             var heldCards = GetHeldCards(hand, heldPositions);
             var handService = new CardHandService();
 
-            if(heldCards.Count >= 4)
+            if(heldCards.Count >= 3)
                 return BruteForce(hand, heldCards, heldPositions, iterations, handService);
 
             int wins = 0, score = 0;
@@ -182,7 +182,7 @@ namespace Cards
 
         private HandSimulatorResult BruteForce(List<Card> hand, List<Card> heldCards, byte heldPositions, int iterations, CardHandService handService)
         {
-            if (heldCards.Count < 4)
+            if (heldCards.Count < 3)
                 throw new NotImplementedException("BruteForce only supports holding 0 or 1 cards"); // ...for now
 
             if (heldCards.Count == 5)
@@ -202,7 +202,7 @@ namespace Cards
 
                 return output;
             }
-            else
+            else if(heldCards.Count == 4)
             {
                 decimal wins = 0, score = 0;
                 var handTypeCount = new Dictionary<HandType, int>();
@@ -244,6 +244,54 @@ namespace Cards
                 };
 
             }
+            else
+            {
+
+                decimal wins = 0, score = 0;
+                int actualIterations = 0;
+                var handTypeCount = new Dictionary<HandType, int>();
+                var undrawnCards = Enumerable.Range(0, 52).Select(x => Card.FromInt(x))
+                                            .Where(x => !hand.Any(y => x.Rank == y.Rank && x.Suit == y.Suit))
+                                            .ToList();
+
+                for(var i = 0; i < undrawnCards.Count; i++)
+                {
+                    for(var j = i + 1; j < undrawnCards.Count; j++)
+                    {
+                        var testHand = heldCards.Append(undrawnCards[i]).Append(undrawnCards[j]).ToList();
+                        var result = handService.GetHand(testHand);
+                        var handScore = Score(result, 1);
+                        if (handScore > 0)
+                        {
+                            wins++;
+                            score += handScore;
+                        }
+                        handTypeCount[result.HandType] = handTypeCount.ContainsKey(result.HandType) ? handTypeCount[result.HandType] + 1 : 1;
+                        actualIterations++;
+                    }
+                }
+
+                // Extrapolate the results
+                wins = Math.Round(wins / actualIterations * iterations, 0, MidpointRounding.ToEven);
+                score = Math.Round(score / actualIterations * iterations, 0, MidpointRounding.ToEven);
+                foreach (var keyValue in handTypeCount.ToList())
+                {
+                    var value = Convert.ToDecimal(keyValue.Value);
+                    value = Math.Round(value / actualIterations * iterations, 0, MidpointRounding.ToEven);
+                    handTypeCount[keyValue.Key] = Convert.ToInt32(value);
+                }
+
+                return new HandSimulatorResult
+                {
+                    HandTypeCount = handTypeCount,
+                    HeldCards = heldCards,
+                    HeldPositions = heldPositions,
+                    Iterations = iterations,
+                    Score = Convert.ToInt32(score),
+                    Wins = Convert.ToInt32(wins)
+                };
+            }
+
         }
     }
 }
