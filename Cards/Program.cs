@@ -36,40 +36,38 @@ namespace Cards
                 else
                 {
                     hand = Shuffle(null).Take(5).ToList();
-                    Console.WriteLine($"Running simulations on {Stringify(hand)}");
+                    Console.WriteLine($"Drew {Stringify(hand)}");
                     Console.WriteLine("Press [R] to Redeal, or any other key to confirm...");
                     if (Console.ReadKey().KeyChar.ToString().ToLower() == "r")
                         continue;
                 }
 
-
+                var sw = System.Diagnostics.Stopwatch.StartNew();
                 var heldPositions = Enumerable.Range(0, 32)
                                     .ToList();
 
                 var threadResults = new ConcurrentBag<HandSimulatorResult>();
                 int resultCount = 0;
 
-                void printProgress()
-                {
-                    var results = Interlocked.Increment(ref resultCount);
-                    var spaceCount = Math.Max(32 - results - 1, 0);
-                    var percent = Math.Min(results * 1.0 / 32, 1);
-                    Console.CursorLeft = 0;                    
-                    Console.Write($"Processing [{new string('.', results)}{new string(' ', spaceCount)}] ({percent:P0})");
-                }
+                Console.Write($"Processing [{new string(' ', 32)}] (0%)");
 
-                printProgress();
                 Parallel.ForEach(heldPositions,
                     new ParallelOptions { MaxDegreeOfParallelism = 4 },
                     heldPosition =>
                     {
                         var simulator = new HandSimulator();
                         threadResults.Add(simulator.Process(hand, (byte)heldPosition, iterations));
-                        printProgress();
+
+                        var results = Interlocked.Increment(ref resultCount);
+                        var spaceCount = Math.Max(32 - results, 0);
+                        var percent = Math.Min(results * 1.0 / 32, 1);
+                        Console.CursorLeft = 0;
+                        Console.Write($"Processing [{new string('.', results)}{new string(' ', spaceCount)}] ({percent:P0})");
                     });
 
-                printProgress();
-                Console.WriteLine();
+                sw.Stop();
+                
+                Console.WriteLine($"\nAnalysis completed in {sw.Elapsed.TotalMilliseconds / 1000:N2} seconds.");
                 var results = threadResults.OrderBy(x => x.HeldPositions).ToList();
                 foreach (var result in results)
                     Console.WriteLine($"[{result.HeldPositions}]: {Stringify(result.HeldCards)}");
@@ -83,7 +81,7 @@ namespace Cards
 
                 while (true)
                 {
-                    Console.Write("[I]nput, [R]andom, [Q]uit or (0-32): ");
+                    Console.Write("[I]nput, [R]andom, [Q]uit or (0-31): ");
                     response = Console.ReadLine();
 
                     if (int.TryParse(response, out var value) && value >= 0 && value < 32)
@@ -144,13 +142,14 @@ namespace Cards
 
         public HandSimulatorResult Process(List<Card> hand, byte heldPositions, int iterations)
         {
-            int wins = 0, score = 0;
-            var handTypeCount = new Dictionary<HandType, int>();
-
             var heldCards = GetHeldCards(hand, heldPositions);
-
             var handService = new CardHandService();
 
+            if(heldCards.Count >= 4)
+                return BruteForce(hand, heldCards, heldPositions, iterations, handService);
+
+            int wins = 0, score = 0;
+            var handTypeCount = new Dictionary<HandType, int>();
             for (var i = 0; i < iterations; i++)
             {
                 var redeal = Shuffle(hand).Take(5 - heldCards.Count).ToList();
@@ -159,7 +158,7 @@ namespace Cards
                 var result = handService.GetHand(redeal);
 
                 var handScore = Score(result, 1);
-                if(handScore > 0)
+                if (handScore > 0)
                 {
                     wins++;
                     score += handScore;
@@ -179,6 +178,72 @@ namespace Cards
                 Wins = wins
             };
 
+        }
+
+        private HandSimulatorResult BruteForce(List<Card> hand, List<Card> heldCards, byte heldPositions, int iterations, CardHandService handService)
+        {
+            if (heldCards.Count < 4)
+                throw new NotImplementedException("BruteForce only supports holding 0 or 1 cards"); // ...for now
+
+            if (heldCards.Count == 5)
+            {
+                var result = handService.GetHand(heldCards);
+                var handScore = Score(result, 1);
+
+                var output = new HandSimulatorResult
+                {
+                    Iterations = iterations,
+                    HeldPositions = heldPositions,
+                    HeldCards = heldCards,
+                    Score = handScore * iterations,
+                    Wins = (handScore > 0) ? iterations : 0,
+                    HandTypeCount = new Dictionary<HandType, int> { [result.HandType] = iterations }
+                };
+
+                return output;
+            }
+            else
+            {
+                decimal wins = 0, score = 0;
+                var handTypeCount = new Dictionary<HandType, int>();
+                var undrawnCards = Enumerable.Range(0, 52).Select(x => Card.FromInt(x))
+                                            .Where(x => !hand.Any(y => x.Rank == y.Rank && x.Suit == y.Suit))
+                                            .ToList();
+
+                foreach (var card in undrawnCards)
+                {
+                    var testHand = heldCards.Append(card).ToList();
+                    var result = handService.GetHand(testHand);
+                    var handScore = Score(result, 1);
+                    if (handScore > 0)
+                    {
+                        wins++;
+                        score += handScore;
+                    }
+                    handTypeCount[result.HandType] = handTypeCount.ContainsKey(result.HandType) ? handTypeCount[result.HandType] + 1 : 1;
+                }
+
+                // Extrapolate the results
+                wins = Math.Round(wins / undrawnCards.Count * iterations, 0, MidpointRounding.ToEven);
+                score = Math.Round(score / undrawnCards.Count * iterations, 0, MidpointRounding.ToEven);
+                foreach (var keyValue in handTypeCount.ToList())
+                {
+                    var value = Convert.ToDecimal(keyValue.Value);
+                    value = Math.Round(value / undrawnCards.Count * iterations, 0, MidpointRounding.ToEven);
+                    handTypeCount[keyValue.Key] = Convert.ToInt32(value);
+                }
+
+                return new HandSimulatorResult
+                {
+                    HandTypeCount = handTypeCount,
+                    HeldCards = heldCards,
+                    HeldPositions = heldPositions,
+                    Iterations = iterations,
+                    Score = Convert.ToInt32(score),
+                    Wins = Convert.ToInt32(wins)
+                };
+
+            }
         }
     }
 }
