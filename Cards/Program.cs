@@ -18,20 +18,34 @@ namespace Cards
 
             List<Card> hand = new List<Card>();
             var response = string.Empty;
+            var errorMessage = string.Empty;
 
             Console.Write("[I]nput hand, or [R]andom?");
             response = Console.ReadKey().KeyChar.ToString();
-
+            
             while (true)
             {
 
                 Console.Clear();
+                if(!string.IsNullOrEmpty(errorMessage))
+                {
+                    Console.WriteLine($"ERROR: {errorMessage}");
+                    errorMessage = string.Empty;
+                }
 
                 if (response == "i")
                 {
                     Console.Write("\nInput hand:");
                     var input = Console.ReadLine();
-                    hand = Card.FromString(input.Split(' ')).Take(5).ToList();
+                    try
+                    {
+                        hand = Card.FromString(input.Split(' ')).Take(5).ToList();
+                    }
+                    catch(ArgumentException)
+                    {
+                        errorMessage = $"Could not parse hand: {input}";
+                        continue;
+                    }
                 }
                 else
                 {
